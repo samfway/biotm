@@ -2,7 +2,7 @@
 
 """ Probabilistic Latent Semantic Analysis """ 
 
-from numpy import zeros, log, dot
+from numpy import zeros, zeros_like, log, dot
 from numpy.random import random
 
 
@@ -20,11 +20,28 @@ class plsa:
         """ Discover a low-dimensional semantic space from X, using EM.
         """ 
         self.num_docs, self.num_words = X.shape
-        self.p_w_z, self.p_z_d = plsa_em(X, self.num_topics, self.num_models)
+        p_w_z = zeros((self.num_words, self.num_topics))
+        p_z_d = zeros((self.num_topics, self.num_docs))
+        self.p_w_z = zeros_like(p_w_z)
+        self.p_z_d = zeros_like(p_z_d)
+        p_d = 1.*X.sum(axis=1)/X.sum()
+        best_log_likelihood = 0
+        
+        for m in xrange(self.num_models):
+            print 'Training model %d/%d...' % (m+1, self.num_models)
+            log_likelihood = plsa_em(X, p_w_z, p_z_d, p_d)
+            if log_likelihood < best_log_likelihood:
+                self.p_w_z, p_w_z = (p_w_z, self.p_w_z)
+                self.p_z_d, p_z_d = (p_z_d, self.p_z_d)
 
     
     def transform(self, X):
-        pass
+        if self.p_w_z is None:
+            raise ValueError('Model not fit prior to use')
+        p_d = 1.*X.sum(axis=1)/X.sum()
+        p_z_d = zeros((self.num_topics, X.shape[0]))
+        plsa_em(X, self.p_w_z, p_z_d, p_d, folding=True)
+        return p_z_d
 
 
     def fit_transform(self, X, y=None):
@@ -32,7 +49,7 @@ class plsa:
         return self.p_z_d
 
 
-def plsa_em(X, num_topics, num_models,
+def plsa_em(X, p_w_z, p_z_d, p_d, folding=False,
             min_delta_l=0.0001, max_em_iter=10000):
     """ Expectation Maximization for the PLSA topic model
 
@@ -53,59 +70,39 @@ def plsa_em(X, num_topics, num_models,
           -p_w_z:  Probabilities of each word, given a topic.
           -p_z_d:  Probabilities of each topic, given a document. 
     """
-    X = X.astype(float)
+    num_topics = p_z_d.shape[0]
     num_docs, num_words = X.shape
-    p_w_z_best = zeros((num_words, num_topics))
-    p_z_d_best = zeros((num_topics, num_docs))
-    p_w_z = zeros(p_w_z_best.shape)
-    p_z_d = zeros(p_z_d_best.shape)
     p_z_wd = zeros((num_topics, num_words, num_docs))
-    l_best = 0
 
-    """ P(d) or P(D=d) is just the proportion of words 
-        in the corpus that belong to d, which is the 
-        sum of word counts in each document, divided
-        by the total sum of words.  
-        
-        Note:  axis=1 specifies to sum over the "n_features".
-    """ 
-    p_d = X.sum(axis=1)/X.sum()
-
-    for model_iter in xrange(num_models):
-        em_rounds = 0
+    em_rounds = 0
+    """ [:,None] transforms what would be an array 
+        with shape (num_words,) to (num_words,1)
+        so that each word's prob is divided by
+        the sum of all words in the topic. 
+    """
+    if not folding:
         p_w_z[:] = random(p_w_z.shape)
-        p_z_d[:] = random(p_z_d.shape)
-        """ [:,None] transforms what would be an array 
-            with shape (num_words,) to (num_words,1)
-            so that each word's prob is divided by
-            the sum of all words in the topic. 
-        """
         p_w_z /= p_w_z.sum(axis=1)[:,None]  # sum(p_w_z[0, :]) ~ 1
-        p_z_d /= p_z_d.sum(axis=1)[:,None]
 
+    p_z_d[:] = random(p_z_d.shape)
+    p_z_d /= p_z_d.sum(axis=1)[:,None]
+
+    l_current = log_likelihood(X, p_w_z, p_z_d, p_d)
+    l_old = 0
+    em_iter = 0
+
+    while (em_iter < max_em_iter) and \
+          (abs(l_current-l_old) > abs(l_old)*min_delta_l):
+        # Still improving and fewer than max iterations 
+        l_old = l_current
+        em_iter += 1
+
+        # Run EM
+        em_e_step(p_z_wd, p_w_z, p_z_d)        
+        em_m_step(X, p_w_z, p_z_d, p_z_wd, folding)
         l_current = log_likelihood(X, p_w_z, p_z_d, p_d)
-        l_old = 0
-        em_iter = 0
 
-        print '\nRound %d' % (model_iter+1)
-
-        while (em_iter < max_em_iter) and \
-              (abs(l_current-l_old) > abs(l_old)*min_delta_l):
-            # Still improving and fewer than max iterations 
-            l_old = l_current
-            em_iter += 1
-
-            # Run EM
-            em_e_step(p_z_wd, p_w_z, p_z_d)        
-            em_m_step(X, p_w_z, p_z_d, p_z_wd)
-            l_current = log_likelihood(X, p_w_z, p_z_d, p_d)
-
-        if l_current < l_best:
-            p_w_z_best[:] = p_w_z  # Deep copy!
-            p_z_d_best[:] = p_z_d
-            l_best = l_current
-
-    return p_w_z_best, p_z_d_best
+    return l_current
 
 
 def em_e_step(p_z_wd, p_w_z, p_z_d):
@@ -134,17 +131,16 @@ def em_e_step(p_z_wd, p_w_z, p_z_d):
                 p_z_wd[:,j,i] = 0
 
 
-def em_m_step(X, p_w_z, p_z_d, p_z_wd, folding_in=False):
+def em_m_step(X, p_w_z, p_z_d, p_z_wd, folding=False):
     """ Update p_w_z and p_z_d """ 
     num_topics, num_words, num_docs = p_z_wd.shape
     
     # Update p_w_z -- don't touch if folding in.
-    if not folding_in:
+    if not folding:
         p_w_z[:] = 0.
-        for j in xrange(num_words):
+        for i, j in zip(*X.nonzero()):  # doc, word with nonzero count
             for k in xrange(num_topics):
-                for i in xrange(num_docs):
-                    p_w_z[j,k] += X[i,j] * p_z_wd[k,j,i]
+                p_w_z[j,k] += X[i,j] * p_z_wd[k,j,i]
         
         for j in xrange(num_words):
             for k in xrange(num_topics):
@@ -186,5 +182,5 @@ def log_likelihood(X, p_w_z, p_z_d, p_d):
 if __name__=="__main__":
     from numpy.random import poisson
     X = poisson(1, (10, 1000))
-    clf = plsa(n_components=2, n_iter=10)
+    clf = plsa(n_components=2, n_iter=2)
     clf.fit(X)
