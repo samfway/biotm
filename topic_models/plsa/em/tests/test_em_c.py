@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """Unit tests for expectation maximization."""
 
-from biotm.topic_models.plsa import log_likelihood, em_e_step, em_m_step
+from biotm.topic_models.plsa.em.plsa_em import log_likelihood, em_e_step, em_m_step, normalize
 
 from unittest import TestCase, main
 from numpy import array, zeros
 
-class logLikelihoodTests(TestCase):
+class emTests(TestCase):
     """ Test parsing of log-likelihood calculation. """
     def setUp(self):
         # 3docs, 4words, 5topics
@@ -96,6 +96,19 @@ class logLikelihoodTests(TestCase):
         error_p_z_d = error_p_z_d.sum()
         self.assertAlmostEqual(0., error_p_z_d, places=7)
 
+    def test_normalization(self):
+        X = self.p_w_z.copy()
+        Xn = X / X.sum(axis=1)[:,None]
+        normalize(X)
+        diff = abs(X - Xn)
+        self.assertAlmostEqual(diff.sum(), 0.0, places=5)
+        
+        X = self.X.astype(float).copy()
+        Xn = X / X.sum(axis=1)[:,None]
+        normalize(X)
+        diff = abs(X - Xn)
+        self.assertAlmostEqual(diff.sum(), 0.0, places=5)
+  
 
 if __name__ == '__main__':
     main()

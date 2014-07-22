@@ -24,7 +24,7 @@ class plsa:
         p_z_d = zeros((self.num_topics, self.num_docs))
         self.p_w_z = zeros_like(p_w_z)
         self.p_z_d = zeros_like(p_z_d)
-        p_d = 1.*X.sum(axis=1)/X.sum()
+        p_d = 1.*X.sum(axis=1)/X.sum()  # sum(axis=1) -> sum over words
         best_log_likelihood = 0
         
         for m in xrange(self.num_models):
@@ -75,17 +75,17 @@ def plsa_em(X, p_w_z, p_z_d, p_d, folding=False,
     p_z_wd = zeros((num_topics, num_words, num_docs))
 
     em_rounds = 0
-    """ [:,None] transforms what would be an array 
-        with shape (num_words,) to (num_words,1)
+    """ [None,:] transforms what would be an array 
+        with shape (num_topics,) to (1, num_topics)
         so that each word's prob is divided by
         the sum of all words in the topic. 
     """
     if not folding:
         p_w_z[:] = random(p_w_z.shape)
-        p_w_z /= p_w_z.sum(axis=1)[:,None]  # sum(p_w_z[0, :]) ~ 1
+        p_w_z /= p_w_z.sum(axis=0)[None,:]  # sum(axis=0) -> sum over words
 
     p_z_d[:] = random(p_z_d.shape)
-    p_z_d /= p_z_d.sum(axis=1)[:,None]
+    p_z_d /= p_z_d.sum(axis=0)[None,:]
 
     l_current = log_likelihood(X, p_w_z, p_z_d, p_d)
     l_old = 0
@@ -142,9 +142,8 @@ def em_m_step(X, p_w_z, p_z_d, p_z_wd, folding=False):
             for k in xrange(num_topics):
                 p_w_z[j,k] += X[i,j] * p_z_wd[k,j,i]
         
-        for j in xrange(num_words):
-            for k in xrange(num_topics):
-                p_w_z[:,k] /= sum(p_w_z[:,k])
+        # Normalize p_w_z
+        p_w_z /= p_w_z.sum(axis=0)[None,:]
 
     # Update p_z_d
     for i in xrange(num_docs):
