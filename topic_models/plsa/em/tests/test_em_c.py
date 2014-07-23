@@ -98,13 +98,13 @@ class emTests(TestCase):
 
     def test_normalization(self):
         X = self.p_w_z.copy()
-        Xn = X / X.sum(axis=1)[:,None]
+        Xn = X / X.sum(axis=0)[None,:]
         normalize(X)
         diff = abs(X - Xn)
         self.assertAlmostEqual(diff.sum(), 0.0, places=5)
         
         X = self.X.astype(float).copy()
-        Xn = X / X.sum(axis=1)[:,None]
+        Xn = X / X.sum(axis=0)[None,:]
         normalize(X)
         diff = abs(X - Xn)
         self.assertAlmostEqual(diff.sum(), 0.0, places=5)
