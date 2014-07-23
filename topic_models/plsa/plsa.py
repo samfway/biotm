@@ -5,6 +5,12 @@
 from numpy import zeros, zeros_like, log, dot
 from numpy.random import random
 
+try:
+    import biotm.topic_models.plsa.em.plsa_em as em_c
+    USE_C = True
+except:
+    USE_C = False
+
 
 class plsa:
     def __init__(self, n_components=2, n_iter=5):
@@ -29,7 +35,11 @@ class plsa:
         
         for m in xrange(self.num_models):
             print 'Training model %d/%d...' % (m+1, self.num_models)
-            log_likelihood = plsa_em(X, p_w_z, p_z_d, p_d)
+            if USE_C:
+                log_likelihood = em_c.plsa_em(X, p_w_z, p_z_d, p_d)
+            else:
+                log_likelihood = plsa_em(X, p_w_z, p_z_d, p_d)
+
             if log_likelihood < best_log_likelihood:
                 self.p_w_z, p_w_z = (p_w_z, self.p_w_z)
                 self.p_z_d, p_z_d = (p_z_d, self.p_z_d)
@@ -40,7 +50,11 @@ class plsa:
             raise ValueError('Model not fit prior to use')
         p_d = 1.*X.sum(axis=1)/X.sum()
         p_z_d = zeros((self.num_topics, X.shape[0]))
-        plsa_em(X, self.p_w_z, p_z_d, p_d, folding=True)
+        if USE_C:
+            em_c.plsa_em(X, self.p_w_z, p_z_d, p_d, folding=True)
+        else:
+            plsa_em(X, self.p_w_z, p_z_d, p_d, folding=True)
+
         return p_z_d
 
 

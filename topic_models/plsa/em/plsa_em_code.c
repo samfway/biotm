@@ -8,8 +8,8 @@
 
 double _plsa_em(unsigned int *X,
                 unsigned int X_size,
-                double *p_w_z_best,
-                double *p_z_d_best,
+                double *p_w_z,
+                double *p_z_d,
                 double *p_d,
                 unsigned int num_words,
                 unsigned int num_docs,
@@ -50,8 +50,8 @@ void normalize2d(double *c_array, unsigned int rows,
 
 double _plsa_em(unsigned int *X,
                 unsigned int X_size,
-                double *p_w_z_best,
-                double *p_z_d_best,
+                double *p_w_z,
+                double *p_z_d,
                 double *p_d,
                 unsigned int num_words,
                 unsigned int num_docs,
@@ -60,29 +60,57 @@ double _plsa_em(unsigned int *X,
                 double min_delta_l,
                 unsigned int max_em_iter)
 {
-    double *p_w_z, *p_z_d, *p_z_wd;
+    double *p_z_wd;
     double l_current, l_old;
     unsigned int i, j, k, em_iter, amount;
 
+    // Seed the random number generator
+    srand(time(NULL));
+
+    /*
     p_w_z = (double *) calloc(num_words*num_topics, sizeof(double));
     p_z_d = (double *) calloc(num_topics*num_docs, sizeof(double));
+    free(p_w_z);
+    free(p_z_d);
+    */
     p_z_wd = (double *) calloc(num_topics*num_words*num_docs,
                                sizeof(double));
 
-    
+    // Initialize p_z_d and (potentially) p_w_z 
     randomize(p_z_d, num_topics*num_docs);
     normalize2d(p_z_d, num_topics, num_docs);
+    if (!folding)
+    {
+        randomize(p_w_z, num_words*num_topics);
+        normalize2d(p_w_z, num_words, num_topics);
+    }
+
+    l_current = _log_likelihood(X, X_size, p_w_z,
+                                p_z_d, p_d, num_words,
+                                num_docs, num_topics);
+    l_old = 0.0; 
 
     for (em_iter=0; em_iter<max_em_iter; em_iter++)
     {
+    
+        l_old = l_current;     
+        _em_e_step(p_z_wd, p_w_z, p_z_d, num_words,
+                   num_docs, num_topics);
+        _em_m_step(X, X_size, p_z_wd, p_w_z, p_z_d,
+                   num_words, num_docs, num_topics,
+                   folding);
+        l_current = _log_likelihood(X, X_size, p_w_z,
+                                p_z_d, p_d, num_words,
+                                num_docs, num_topics);
 
+        if (abs(l_current-l_old) < abs(l_old)*min_delta_l)
+            break;
     }
 
-    free(p_w_z);
-    free(p_z_d);
+    // Clean up
     free(p_z_wd); 
-    
-    return 2.0;
+
+    return l_current;
 }
 
 void _em_e_step(double *p_z_wd,
@@ -196,9 +224,11 @@ void _em_m_step(unsigned int *X,
 void randomize(double *array, unsigned int num_elements)
 {
     unsigned int i;
+    double temp;
+
     for (i=0; i<num_elements; i++)
     {
-        array[i] = rand(); 
+        array[i] = (double)rand() / RAND_MAX;
     }
 }
 

@@ -11,8 +11,8 @@ cimport numpy as np
 cdef extern from "plsa_em_code.c":
     double _plsa_em(unsigned int *X,
                     unsigned int X_size,
-                    double *p_w_z_best,
-                    double *p_z_d_best,
+                    double *p_w_z,
+                    double *p_z_d,
                     double *p_d,
                     unsigned int num_words,
                     unsigned int num_docs,
@@ -71,7 +71,7 @@ def plsa_em(X,
             np.ndarray[np.float64_t, ndim=2, mode='c']p_w_z,
             np.ndarray[np.float64_t, ndim=2, mode='c']p_z_d,
             np.ndarray[np.float64_t, ndim=1, mode='c']p_d,
-            folding,
+            folding=False,
             min_delta_l=0.0001,
             max_em_iter=10000):
     """ Prepare data to be passed into external C function """ 
@@ -83,17 +83,17 @@ def plsa_em(X,
     num_docs = p_z_d.shape[1]
     num_topics = p_z_d.shape[0]
 
-    _plsa_em(<unsigned int *>nonzero_X.data,
-             <unsigned int>len(nonzero_X),
-             <double *>p_w_z.data,
-             <double *>p_z_d.data,
-             <double *>p_d.data,
-             <unsigned int>num_words,
-             <unsigned int>num_docs,
-             <unsigned int>num_topics,
-             <unsigned int>folding,
-             <double>min_delta_l,
-             <unsigned int>max_em_iter)
+    return _plsa_em(<unsigned int *>nonzero_X.data,
+                    <unsigned int>len(nonzero_X),
+                    <double *>p_w_z.data,
+                    <double *>p_z_d.data,
+                    <double *>p_d.data,
+                    <unsigned int>num_words,
+                     <unsigned int>num_docs,
+                     <unsigned int>num_topics,
+                     <unsigned int>folding,
+                     <double>min_delta_l,
+                     <unsigned int>max_em_iter)
 
 
 def em_e_step(np.ndarray[np.float64_t, ndim=3, mode='c']p_z_wd,
