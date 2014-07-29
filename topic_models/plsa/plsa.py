@@ -13,9 +13,20 @@ except:
 
 
 class plsa:
+    """ 
+          -n_components: Number of topics to learn. 
+          -n_iter:       Number of times to run the EM algorithm.
+                         Depending on initial conditions, EM may
+                         converge to a local maxima, not necessarily
+                         the global maxima.  For this reason, the 
+                         algorithm can be ran several times, selecting
+                         the best model from the set of iterations. 
+    """ 
+
+
     def __init__(self, n_components=2, n_iter=5):
         self.num_topics = n_components 
-        self.num_models = n_iter
+        self.n_iter = n_iter
         self.num_words = None
         self.num_docs = None
         self.p_w_z = None
@@ -33,8 +44,7 @@ class plsa:
         p_d = 1.*X.sum(axis=1)/X.sum()  # sum(axis=1) -> sum over words
         best_log_likelihood = 0
         
-        for m in xrange(self.num_models):
-            print 'Training model %d/%d...' % (m+1, self.num_models)
+        for m in xrange(self.n_iter):
             if USE_C:
                 log_likelihood = em_c.plsa_em(X, p_w_z, p_z_d, p_d)
             else:
@@ -55,12 +65,25 @@ class plsa:
         else:
             plsa_em(X, self.p_w_z, p_z_d, p_d, folding=True)
 
-        return p_z_d
+        return p_z_d.transpose()
+
+
+    def get_params(self, deep=True):
+        """ Eventually, return everything.
+            For now, just return a dictionary that
+            contains a copy of P(w|z) 
+        """ 
+        return {'p_w_z': self.p_w_z.copy()}
+
+
+    def set_params(self, **parameters):
+        """ Implement this at some point """
+        raise NotImplementedError('set_params needs work...')
 
 
     def fit_transform(self, X, y=None):
         self.fit(X, y)
-        return self.p_z_d
+        return self.p_z_d.transpose()
 
 
 def plsa_em(X, p_w_z, p_z_d, p_d, folding=False,
@@ -69,20 +92,18 @@ def plsa_em(X, p_w_z, p_z_d, p_d, folding=False,
 
         Inputs:
           -X:  Input data matrix. (n_samples, n_features)
-          -num_topics:   Number of topics to learn. 
-          -num_models:   Number of times to run the EM algorithm.
-                         Depending on initial conditions, EM may
-                         converge to a local maxima, not necessarily
-                         the global maxima.  For this reason, the 
-                         algorithm can be ran several times, selecting
-                         the best model from the set of iterations. 
+          -p_w_z:  P(w|z) distribution (array)
+          -p_z_d:  P(z|d) distribution (array)
+          -p_d:    P(d)   distribution (array)
+          -folding:  Transforming new doc-word vectors into topic space
+                     definied by P(w|z).  Do NOT update P(w|z)
           -min_delta_l:  Minimum percent change for the log-likelihood.
                          Stop when improvement falls below this threshold.
           -max_em_iter:  Maximum number of iteration for the EM algorithm.
                  
         Returns:
-          -p_w_z:  Probabilities of each word, given a topic.
-          -p_z_d:  Probabilities of each topic, given a document. 
+          (float) log-likelihood after final EM iteration.
+        
     """
     num_topics = p_z_d.shape[0]
     num_docs, num_words = X.shape
