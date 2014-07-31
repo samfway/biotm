@@ -1,54 +1,8 @@
 #include <stdio.h>
 #include <time.h>
+#include "plsa_em_code.h"
 
-#define C_(cols, i, j) (i*cols + j)
-#define C3_(sj, sk, i, j, k) (i*sj*sk + j*sk + k)
-#define F_(rows, i, j) (j*rows + i)
-#define SWAP(a, b, temp) temp=a; a=b; b=temp;
-
-double _plsa_em(unsigned int *X,
-                unsigned int X_size,
-                double *p_w_z,
-                double *p_z_d,
-                double *p_d,
-                unsigned int num_words,
-                unsigned int num_docs,
-                unsigned int num_topics,
-                unsigned int folding,
-                double min_delta_l,
-                unsigned int max_em_iter);
-
-double _log_likelihood(unsigned int *X,
-                       unsigned int X_size,
-                       double *p_w_z,
-                       double *p_z_d,
-                       double *p_d,
-                       unsigned int num_words,
-                       unsigned int num_docs,
-                       unsigned int num_topics);
-
-void _em_e_step(double *p_z_wd,
-                double *p_w_z,
-                double *p_z_d,
-                unsigned int num_words,
-                unsigned int num_docs,
-                unsigned int num_topics);
-
-void _em_m_step(unsigned int *X,
-                unsigned int X_size,
-                double *p_z_wd,
-                double *p_w_z,
-                double *p_z_d,
-                unsigned int num_words,
-                unsigned int num_docs,
-                unsigned int num_topics,
-                unsigned int folding); 
-
-void randomize(double *array, unsigned int num_elements);
-void normalize2d(double *c_array, unsigned int rows,
-                 unsigned int cols);
-
-double _plsa_em(unsigned int *X,
+double _plsa_em(double *X,
                 unsigned int X_size,
                 double *p_w_z,
                 double *p_z_d,
@@ -67,12 +21,6 @@ double _plsa_em(unsigned int *X,
     // Seed the random number generator
     srand(time(NULL));
 
-    /*
-    p_w_z = (double *) calloc(num_words*num_topics, sizeof(double));
-    p_z_d = (double *) calloc(num_topics*num_docs, sizeof(double));
-    free(p_w_z);
-    free(p_z_d);
-    */
     p_z_wd = (double *) calloc(num_topics*num_words*num_docs,
                                sizeof(double));
 
@@ -169,7 +117,7 @@ void _em_e_step(double *p_z_wd,
     }
 }
 
-void _em_m_step(unsigned int *X,
+void _em_m_step(double *X,
                 unsigned int X_size,
                 double *p_z_wd,
                 double *p_w_z,
@@ -179,8 +127,8 @@ void _em_m_step(unsigned int *X,
                 unsigned int num_topics,
                 unsigned int folding)
 {
-    unsigned int i, j, k, word_count, doc, word; 
-    double total_count; 
+    unsigned int i, j, k, doc, word; 
+    double total_count, word_count; 
 
     if (!folding)
     {
@@ -190,8 +138,8 @@ void _em_m_step(unsigned int *X,
         for (i=0; i<X_size; i++)
         {
             word_count = X[i];
-            doc = X[F_(X_size, i, 1)];
-            word = X[F_(X_size, i, 2)];
+            doc = (unsigned int)X[F_(X_size, i, 1)];
+            word = (unsigned int)X[F_(X_size, i, 2)];
             for (k=0; k<num_topics; k++)
             {
                 p_w_z[C_(num_topics, word, k)] += word_count *
@@ -206,8 +154,8 @@ void _em_m_step(unsigned int *X,
     for (i=0; i<X_size; i++)
     {
         word_count = X[i];
-        doc = X[F_(X_size, i, 1)];
-        word = X[F_(X_size, i, 2)];
+        doc = (unsigned int)X[F_(X_size, i, 1)];
+        word = (unsigned int)X[F_(X_size, i, 2)];
 
         for (k=0; k<num_topics; k++)
         {
@@ -269,7 +217,7 @@ void normalize2d(double *c_array, unsigned int rows,
 
 }
 
-double _log_likelihood(unsigned int *X,
+double _log_likelihood(double *X,
                        unsigned int X_size,
                        double *p_w_z,
                        double *p_z_d,
@@ -278,15 +226,15 @@ double _log_likelihood(unsigned int *X,
                        unsigned int num_docs,
                        unsigned int num_topics)
 {
-    unsigned int i, k, word_count, word, doc;
+    unsigned int i, k, word, doc;
     double log_likelihood = 0.0;
-    double inner_sum, p_dw;
+    double inner_sum, p_dw, word_count;
 
     for (i=0; i<X_size; i++)
     {
         word_count = X[i];
-        doc = X[F_(X_size, i, 1)];
-        word = X[F_(X_size, i, 2)];
+        doc = (unsigned int)X[F_(X_size, i, 1)];
+        word = (unsigned int)X[F_(X_size, i, 2)];
         inner_sum = 0.0; 
 
         for (k=0; k<num_topics; k++)
