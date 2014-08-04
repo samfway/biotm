@@ -40,7 +40,7 @@ def color_bp(bp, color):
 
 
 def make_grouped_box(ax, data, labels=None, colors=None,
-                     xticklabels=[], width=0.9):
+                     xticklabels=[], width=0.9, legend_pos=0):
     if labels and len(data) != len(labels):
         raise ValueError('Number of labels must match ',
                          'size of data matrix.')
@@ -84,7 +84,8 @@ def make_grouped_box(ax, data, labels=None, colors=None,
                              color=colors[group_index])       
             handles.append(temp)
         """
-        plt.legend(handles, labels, numpoints=1)
+        plt.legend(handles, labels, numpoints=1,
+                   loc=legend_pos)
         for handle in handles:
             handle.set_visible(False)
     

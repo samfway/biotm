@@ -10,6 +10,8 @@ __status__ = "Development"
 from biotm.parse.util import convert_labels_to_int, custom_cast
 
 from numpy import asarray, array
+from pandas import read_csv
+
 import warnings
 
 with warnings.catch_warnings():
@@ -43,8 +45,31 @@ def load_dataset(data_matrix_fp, mapping_fp,
     return data_matrix, sample_ids, taxonomy, labels, label_legend 
 
 
+def parse_mapping_file_to_dataframe(mapping_fp, sep='\t'):
+    """ Parse a standard mapping file into a pandas
+        dataframe object that can be queried like a database.
+
+        Inputs:
+          -mapping_fp: open file pointer to mapping file.
+    
+        Returns:
+          -df: data frame (table) of metadata for each 
+               SampleID.
+    """
+    df = read_csv(mapping_fp, sep=sep)
+    col_names = df.columns.tolist()
+    if not col_names[0] == '#SampleID':
+        raise ValueError('File does not appear to be a valid'
+                         ' mapping file!')
+
+    col_names[0] = 'SampleID'  # Remove the '#'
+    df.columns = col_names
+    return df
+ 
+
 def parse_mapping_file_to_dict(mapping_fp):
-    """ Parse a standard mapping file 
+    """ Parse a standard mapping file into a dictionary
+        relating each SampleID to its metadata values
         
         Inputs:
           -mapping_fp: open file pointer to mapping file.
