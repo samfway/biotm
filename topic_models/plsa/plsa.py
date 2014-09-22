@@ -33,7 +33,7 @@ class plsa:
         self.p_z_d = None
     
     
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, verbose=False):
         """ Discover a low-dimensional semantic space from X, using EM.
         """ 
         self.num_docs, self.num_words = X.shape
@@ -45,6 +45,9 @@ class plsa:
         best_log_likelihood = 0
         
         for m in xrange(self.n_iter):
+            if verbose:
+                print 'Fitting iteration %d..' % (m+1)
+            
             if USE_C:
                 log_likelihood = em_c.plsa_em(X, p_w_z, p_z_d, p_d)
             else:
@@ -81,8 +84,8 @@ class plsa:
         raise NotImplementedError('set_params needs work...')
 
 
-    def fit_transform(self, X, y=None):
-        self.fit(X, y)
+    def fit_transform(self, X, y=None, verbose=False):
+        self.fit(X, y, verbose)
         return self.p_z_d.transpose()
 
 
