@@ -57,6 +57,8 @@ class controlVariableTests(TestCase):
         self.assertEqual(X[0,5], 11.86)
         self.assertEqual(X[1,5], 17.87)
         self.assertEqual(ll[0][int(X[0,3])], 'Norris')
+        self.assertEqual(6, X.shape[1])
+
 
 if __name__ == '__main__':
     main()

@@ -141,12 +141,12 @@ def parse_otu_matrix(biom_fp):
     # Parse the OTU table into a dense matrix
     otu_table = parse_biom_table(biom_fp)
     # Obtain a dense matrix (sparse eventually?)
-    otu_matrix = otu_table._data.toarray()
+    otu_matrix = otu_table.matrix_data.todense()
 
-    taxonomy = [otu_table.observation_metadata[i]['taxonomy'] for i 
-        in xrange(len(otu_table.observation_metadata))]
+    taxonomy = [otu_table._observation_metadata[i]['taxonomy'] for i 
+        in xrange(len(otu_table._observation_metadata))]
 
-    return array(otu_table.sample_ids),\
+    return array(otu_table._sample_ids),\
            array(taxonomy), otu_matrix
 
 
@@ -268,4 +268,4 @@ def add_control_variables(category_names, mapping_fp, data_matrix, sample_ids,
             legends.append(label_legend)
             md_matrix[:, i] = matrix(labels).transpose()
 
-    return hstack([data_matrix, matrix(md_matrix, dtype=float)]), legends
+    return array(hstack([data_matrix, matrix(md_matrix, dtype=float)])), legends
