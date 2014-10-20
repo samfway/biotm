@@ -18,7 +18,7 @@ from biotm.parse.util import convert_labels_to_int
 def write_matrix_to_slda_file(data_matrix, output_file):
     """ Format matrix for input to SLDA """
     output = open(output_file, 'w')
-    N = data_matrix.shape[1]
+    N = data_matrix.shape[1]  # Number of dimensions
     for row in data_matrix:
         to_write = [ '%d:%d'%(k, row[k]) for k in xrange(N) if row[k] > 0 ]
         output.write('%d %s\n' % (len(to_write), ' '.join(to_write)))
@@ -39,11 +39,12 @@ def create_slda_dataset(data_matrix, labels, output_prefix, sample_ids=None):
     output = open(output_name, 'w')
     labels_file = output_name
     if labels is not None:
-        unique_labels, label_indices = convert_labels_to_int(labels)
-        output.write('\n'.join([str(l) for l in label_indices]))
+        #unique_labels, label_indices = convert_labels_to_int(labels)
+        #output.write('\n'.join([str(l) for l in label_indices]))
+        output.write('\n'.join([str(int(l)) for l in labels]))
     else:
-        fake_labels = [0]*len(data_matrix)
-        output.write('\n'.join([str(l) for l in fake_labels]))
+        labels = [0]*len(data_matrix)
+        output.write('\n'.join([str(l) for l in labels]))
     output.close()
     
     # 2) Create data file for SLDA Format: 
@@ -57,6 +58,20 @@ def create_slda_dataset(data_matrix, labels, output_prefix, sample_ids=None):
         output = open(output_name, 'w')
         output.write('\n'.join(sample_ids))
         output.close() 
+
+    # 4) Word list
+    output_name = output_prefix + 'words.txt'
+    output = open(output_name, 'w')
+    for i in xrange(data_matrix.shape[1]):
+        output.write(str(i) + '\n')
+    output.close()
+
+    # 5) Formatted response
+    output_name = output_prefix + 'doc_info.txt'
+    output = open(output_name, 'w')
+    for i in xrange(data_matrix.shape[0]):
+        output.write(str(i) + '\t' + str(labels[i])  + '\n')
+    output.close()
     
     return data_file, labels_file
 
