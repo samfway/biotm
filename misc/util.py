@@ -34,6 +34,7 @@ def BalancedKFold(y, n_folds=3, indices=None, shuffle=False, random_state=None):
 
     # Peform regular, stratified cross validation, but subsample all class
     # labels to even depth
+    folds = []
     for (training, testing) in StratifiedKFold(y_inv, n_folds):
         train = []
         test = [] 
@@ -60,4 +61,11 @@ def BalancedKFold(y, n_folds=3, indices=None, shuffle=False, random_state=None):
                 if saved >= total_test:
                     break
 
+        folds.append((asarray(train), asarray(test)))
+
+    return folds 
+   
+    ''' 
+
         yield (asarray(train), asarray(test))
+    '''
