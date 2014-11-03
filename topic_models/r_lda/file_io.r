@@ -53,10 +53,9 @@
     close(input.fp)
     vocab = unlist(strsplit(toString(1:(max.word+1)),"\\, "))
     
-    print(c("Max word count is...", max.count))
-    
     return(list("documents"=docs, "vocab"=vocab))
 }
+
 
 "ParseLabelFile" <- function(filename)
 {
@@ -65,3 +64,4 @@
     close(input.fp)
     return(labels)
 }
+
