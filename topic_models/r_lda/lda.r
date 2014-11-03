@@ -45,6 +45,7 @@ if (is.null(opts$algo)) stop('Please supply an algorithm (lda/slda)')
 if (!is.element(opts$algo, c('lda', 'slda'))) 
     stop('Please supply a valid algorithm (lda/slda)')
 if (is.null(opts$mode)) stop('Please supply a mode (est/inf)')
+if (is.null(opts$model)) stop('Please supply a model file to be loaded/saved')
 if (opts$mode == "inf" && is.null(opts$model)) stop('Please supply a model file')
 if (opts$topics < 1) stop('Number of topics must be greater than one')
 if (opts$algo == "slda" &&  # If SLDA and training, must have a labels file
@@ -72,6 +73,50 @@ if (opts$algo == "slda")
                        annotations=labels,
                        params=params,
                        variance=0.25)
+        
+        save(res, file=opts$model)
     }
-    
+    else # "inf"
+    {
+        attach(opts$model)
+        if (!exists("res"))
+            stop('Error loading trained model!')
+        docsums <- slda.predict.docsums(documents = data$documents,
+                                        topics = res$topics,
+                                        alpha = 1.0,
+                                        eta = 0.1)
+        
+        write.table(t(docsums), file=paste(opts$outdir, "tc.out", sep="/"),
+                    col.names=FALSE, row.names=FALSE)
+    }
+}
+
+if (opts$algo == "lda")
+{    
+    if (opts$mode == "est")
+    {
+        res <- lda.collapsed.gibbs.sampler(documents = data$documents, 
+                                           K = opts$topics, 
+                                           vocab = data$vocab,
+                                           num.iterations = 100,
+                                           alpha = 1.0, eta = 0.1)
+        save(res, file=opts$model)
+    }
+    else  # "inf"
+    {
+        attach(opts$model)
+        if (!exists("res"))
+            stop('Error loading trained model!')
+        inf.res <- lda.collapsed.gibbs.sampler(documents = data$documents,
+                                               K = opts$topics,
+                                               vocab = data$vocab,
+                                               num.iterations = 100,
+                                               alpha = 1.0,  eta = 0.1,
+                                               initial = res$aassignments,
+                                               freeze.topics = TRUE)
+        
+        write.table(t(inf.res$document_sums), 
+                    file=paste(opts$outdir, "tc.out", sep="/"),
+                    col.names=FALSE, row.names=FALSE)
+    }
 }
