@@ -14,7 +14,7 @@ from numpy import array, asarray, unique, bincount, min, floor, zeros
 from numpy.random import shuffle, permutation
 from sklearn.cross_validation import StratifiedKFold
 
-def BalancedKFold(y, n_folds=3, indices=None, shuffle=False, random_state=None):
+def BalancedKFold(y, n_folds=3, n_iter=1, indices=None, shuffle=False, random_state=None):
     """ Return class-balanced cross validation folds """ 
     y = asarray(y)
     n_samples = y.shape[0]
@@ -35,33 +35,34 @@ def BalancedKFold(y, n_folds=3, indices=None, shuffle=False, random_state=None):
     # Peform regular, stratified cross validation, but subsample all class
     # labels to even depth
     folds = []
-    for (training, testing) in StratifiedKFold(y_inv, n_folds):
-        train = []
-        test = [] 
-        training = permutation(training)
-        testing = permutation(testing)
+    for t in xrange(n_iter):
+        for (training, testing) in StratifiedKFold(y_inv, n_folds):
+            train = []
+            test = [] 
+            training = permutation(training)
+            testing = permutation(testing)
 
-        saved = 0
-        counts = zeros(n_classes)
-        for i in training:
-            if counts[y_inv[i]] < train_per_fold:
-                train.append(i)
-                counts[y_inv[i]] += 1
-                saved += 1
-                if saved >= total_train:
-                    break
+            saved = 0
+            counts = zeros(n_classes)
+            for i in training:
+                if counts[y_inv[i]] < train_per_fold:
+                    train.append(i)
+                    counts[y_inv[i]] += 1
+                    saved += 1
+                    if saved >= total_train:
+                        break
 
-        saved = 0
-        counts = zeros(n_classes)
-        for i in testing:
-            if counts[y_inv[i]] < test_per_fold:
-                test.append(i)
-                counts[y_inv[i]] += 1
-                saved += 1
-                if saved >= total_test:
-                    break
+            saved = 0
+            counts = zeros(n_classes)
+            for i in testing:
+                if counts[y_inv[i]] < test_per_fold:
+                    test.append(i)
+                    counts[y_inv[i]] += 1
+                    saved += 1
+                    if saved >= total_test:
+                        break
 
-        folds.append((asarray(train), asarray(test)))
+            folds.append((asarray(train), asarray(test)))
 
     return folds 
    
