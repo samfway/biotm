@@ -10,9 +10,9 @@
     transformation class. 
 """ 
 
+import warnings
 from gensim.matutils import Scipy2Corpus, corpus2csc, corpus2dense
 from gensim.models.ldamodel import LdaModel 
-
 
 class lda:
     """ 
