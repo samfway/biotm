@@ -67,6 +67,8 @@ if __name__=="__main__":
                 mdl.fit(X_train, y_train)
                 y_pred = mdl.predict(X_test)
                 
+                print prefix
+
                 cv_scores[c] = qual(y_test, y_pred)
             tech_data.append(cv_scores.copy())
         plot_data.append(tech_data)

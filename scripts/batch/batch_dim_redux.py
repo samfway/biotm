@@ -2,6 +2,7 @@
 
 import argparse
 from numpy import load as np_load
+from numpy import save as np_save
 from os import path
 
 from sklearn.decomposition import TruncatedSVD, KernelPCA, FastICA, MiniBatchDictionaryLearning, NMF
@@ -57,5 +58,5 @@ if __name__=="__main__":
 
         txd_training_matrix = dim_redux.fit_transform(training_matrix, training_labels)
         txd_test_matrix = dim_redux.transform(test_matrix)
-        np.save(file_prefix + 'txd_test_matrix', txd_test_matrix)
-        np.save(file_prefix + 'txd_training_matrix', txd_training_matrix)
+        np_save(file_prefix + 'txd_test_matrix', txd_test_matrix)
+        np_save(file_prefix + 'txd_training_matrix', txd_training_matrix)
