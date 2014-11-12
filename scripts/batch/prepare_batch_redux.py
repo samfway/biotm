@@ -35,7 +35,7 @@ def make_bash_script(script_name, data_matrix_file, labels_file, output_dir,
 
 
 def make_launch_script(scripts_dir, n):
-    output = open(path.join(scripts_dir, 'launch.sh'))
+    output = open(path.join(scripts_dir, 'launch.sh'), 'w')
     output.write('#!/bin/bash\n')
     output.write('#PBS -N AG\n')
     output.write('#PBS -joe\n')
@@ -45,6 +45,7 @@ def make_launch_script(scripts_dir, n):
     output.write('#PBS -l nodes=1:ppn=4\n')
     output.write('%s/${PBS_ARRAYID}.sh\n' % scripts_dir)
     output.close()
+    system('chmod u+x %s' % path.join(scripts_dir, 'launch.sh')) 
 
 
 if __name__=="__main__":
@@ -54,23 +55,26 @@ if __name__=="__main__":
     labels_file = args.input_labels
     output_dir = args.output_dir
     
-    num_dims = args.num_dims
-    prefix = 'CV_%d' % (args.cv_fold_id)
-    techniques = get_methods(args.methods)
+    dim_steps = [int(x) for x in args.dims.split(',')]
     output_dir = args.output_dir
     scripts_dir = args.scripts_dir
 
     labels = np_load(labels_file) 
     cv_folds = BalancedKFold(labels, args.num_folds, n_iter=args.cv_iters)
 
-    for i, (training, testing) in enumerate(cv_folds):
-        script_file = path.join(scripts_dir, '%d.sh' % i)
-        file_prefix = path.join(output_dir, 'CV_%d_' % i)
+    i = 0
+    for k, (training, testing) in enumerate(cv_folds):
+        file_prefix = path.join(output_dir, 'CV_%d_' % k)
         training_file = file_prefix+'training.npy'
         np_save(training_file, training)
         testing_file = file_prefix+'testing.npy'
         np_save(testing_file, testing)
-        make_bash_script(script_file, output_dir, data_matrix_file, labels_file,
-                         training_file, testing_file, args.methods)
+        
+        for num_dims in dim_steps:
+            script_file = path.join(scripts_dir, '%d.sh' % i)
+            make_bash_script(script_file, data_matrix_file, labels_file, output_dir,
+                             training_file, testing_file, num_dims, k, args.methods)
+            i += 1
 
-    make_launch_script(scripts_dir, len(cv_folds))
+    make_launch_script(scripts_dir, i-1)
+

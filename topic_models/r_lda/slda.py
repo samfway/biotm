@@ -11,10 +11,10 @@ from os.path import join as path_join
     Naive Python Interface to SLDA.
     The `slda` class provides an interface to R's lda package
 """ 
-SLDA_CMD = 'Rscript /Users/samway/Documents/Work/TopicModeling/biotm/topic_models/r_lda/lda.r ' \
-           '--source_dir /Users/samway/Documents/Work/TopicModeling/biotm/topic_models/r_lda/ ' \
-           '-i %s -l %s -a %s -m %s -s %s -o %s'
-SLDA_SCRATCH = '/Users/samway/Documents/Work/TopicModeling/slda/scratch/'
+SLDA_CMD = 'Rscript /Users/sawa6416/Projects/biotm/topic_models/r_lda/lda.r ' \
+           '--source_dir /Users/sawa6416/Projects/biotm/topic_models/r_lda/ '\
+           '-i %s -l %s -a %s -m %s -s %s -o %s -k %d'
+SLDA_SCRATCH = '/Users/sawa6416/Tools/slda/scratch/'
 
 class slda:
     def __init__(self, n_components=2, alpha=0.1):
@@ -38,7 +38,8 @@ class slda:
         system('rm -f %s' % (self.model_file))
         data_file, labels_file = create_slda_dataset(X, y, path_join(self.temp_dir,'')) 
 
-        cmd = SLDA_CMD % (data_file, labels_file, "slda", "est", self.model_file, self.temp_dir)
+        cmd = SLDA_CMD % (data_file, labels_file, "slda", "est", self.model_file, 
+                          self.temp_dir, self.num_topics)
         system(cmd)
 
         system('sleep 3')  # Allow for files to be written... 
@@ -53,7 +54,8 @@ class slda:
             raise ValueError('Attempt to use a model before training it!')
         data_file, labels_file = create_slda_dataset(X, y, path_join(self.temp_dir, ''))
 
-        cmd = SLDA_CMD % (data_file, labels_file, "slda", "inf", self.model_file, self.temp_dir)
+        cmd = SLDA_CMD % (data_file, labels_file, "slda", "inf", self.model_file,
+                          self.temp_dir, self.num_topics)
         system(cmd)
         system('sleep 3')
 
