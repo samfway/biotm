@@ -41,6 +41,7 @@ class base_lda:
         self.temp_dir = mkdtemp(dir=LDA_SCRATCH, prefix=method)
         self.alpha = alpha
         self.model_file = None
+        self.vocab_size = -1
 
 
     def __del__(self):
@@ -54,13 +55,22 @@ class base_lda:
         # 2 - Run estimation
         # 3 - Save link to model
         self.model_file = path_join(self.temp_dir, 'final.model')
+<<<<<<< HEAD
         self.num_words = X.shape[1]
+=======
+        self.vocab_size = X.shape[1]
+>>>>>>> dff93f104d0f638fff940ed62ffa679f52992835
 
         system('rm -f %s' % (self.model_file))
         data_file, labels_file = create_slda_dataset(X, y, path_join(self.temp_dir,'')) 
 
+<<<<<<< HEAD
         cmd = LDA_CMD % (data_file, labels_file, self.method, "est", self.model_file, 
                           self.temp_dir, self.num_topics, self.num_words)
+=======
+        cmd = SLDA_CMD % (data_file, labels_file, "slda", "est", self.model_file, 
+                          self.temp_dir, self.num_topics, self.vocab_size)
+>>>>>>> dff93f104d0f638fff940ed62ffa679f52992835
         system(cmd)
 
         sleep(3)
@@ -73,16 +83,26 @@ class base_lda:
         # Check to make sure there is a model file (that you've ran fit())
         if self.model_file is None:
             raise ValueError('Attempt to use a model before training it!')
+<<<<<<< HEAD
         if X.shape[1] != self.num_words:
             raise ValueError('Matrix to be processed of improper dimension.')
+=======
+        if X.shape[1] != self.vocab_size:
+            raise ValueError('Matrix to be transformed has wrong dimension')
+>>>>>>> dff93f104d0f638fff940ed62ffa679f52992835
             
         data_file, labels_file = create_slda_dataset(X, y, path_join(self.temp_dir, ''))
         results_file = path_join(self.temp_dir, 'tc.out')
 
+<<<<<<< HEAD
         sleep(3)
         system('rm -f %s' % (results_file))  # Make sure results file doesn't exist already
         cmd = LDA_CMD % (data_file, labels_file, self.method, "inf", self.model_file,
                           self.temp_dir, self.num_topics, self.num_words)
+=======
+        cmd = SLDA_CMD % (data_file, labels_file, "slda", "inf", self.model_file,
+                          self.temp_dir, self.num_topics, self.vocab_size)
+>>>>>>> dff93f104d0f638fff940ed62ffa679f52992835
         system(cmd)
         sleep(3)
 

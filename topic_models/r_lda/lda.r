@@ -34,6 +34,8 @@ option_list <- list(
                 help="Path to stored model"),
     make_option(c("-k", "--topics"), type="integer",
                 help="Number of topics", default=10),
+    make_option(c("-w", "--words"), type="integer",
+                help="Number of words/size of vocabulary"),
     make_option(c("-o", "--outdir"), type="character", default='.',
                 help="Output directory [default %default]")
 )
@@ -41,6 +43,7 @@ opts <- parse_args(OptionParser(option_list=option_list), args=args)
 
 # Error Checking 
 if (is.null(opts$datafile)) stop('Please supply a data file')
+if (is.null(opts$words)) stop('Please specify size of vocabulary')
 if (is.null(opts$algo)) stop('Please supply an algorithm (lda/slda)')
 if (!is.element(opts$algo, c('lda', 'slda'))) 
     stop('Please supply a valid algorithm (lda/slda)')
@@ -56,6 +59,7 @@ if (opts$algo == "slda" &&  # If SLDA and training, must have a labels file
 # Create output directory if needed
 if(opts$outdir != ".") dir.create(opts$outdir,showWarnings=FALSE, recursive=TRUE)
 data <- ParseDataFile(opts$datafile)
+vocab = unlist(strsplit(toString(1:opts$words),"\\, "))
 
 if (opts$algo == "slda") 
 { 
@@ -66,7 +70,7 @@ if (opts$algo == "slda")
                 
         res <- slda.em(documents=data$documents, 
                        K=opts$topics, 
-                       vocab=data$vocab, 
+                       vocab=vocab, 
                        num.e.iterations=100, 
                        num.m.iterations=40,
                        alpha=1.0, eta=0.1,
