@@ -11,8 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
 from biotm.topic_models.plsa.plsa import plsa
-from biotm.topic_models.r_lda.slda import slda
-from biotm.topic_models.r_lda.lda import lda
+from biotm.topic_models.r_lda.slda import slda, lda
 from biotm.scripts.batch.util import get_methods
 
 
