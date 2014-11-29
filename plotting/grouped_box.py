@@ -85,11 +85,16 @@ def make_separated_box(ax, data, labels=None, colors=None,
         current_pos += 2
 
     if labels:
-        legend_hack(ax, labels, colors, legend_pos)
+        lgd = legend_hack(ax, labels, colors, legend_pos)
+    else:
+        lgd = None
 
     ax.set_xlim(-1,current_pos-2)
     ax.set_xticks(xticks)
     ax.set_xticklabels(xlabels)
+
+    return lgd
+
 
 def make_grouped_box(ax, data, labels=None, colors=None,
                      xticklabels=[], width=0.9, legend_pos=0,
@@ -128,11 +133,15 @@ def make_grouped_box(ax, data, labels=None, colors=None,
                 markeredgecolor='k')
 
     if labels:
-        legend_hack(ax, labels, colors, legend_pos)
+        lgd = legend_hack(ax, labels, colors, legend_pos)
+    else:
+        lgd = None
     
     ax.set_xlim(0,(num_groups+extra_groups)*num_points)
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels)
+
+    return lgd
 
 
 def legend_hack(ax, labels, colors, legend_pos):
@@ -144,10 +153,18 @@ def legend_hack(ax, labels, colors, legend_pos):
                           linewidth=2,
                           color=colors[i])
         handles.append(temp)
-    plt.legend(handles, labels, numpoints=1,
+
+    if legend_pos != 'outside':
+        lgd = plt.legend(handles, labels, numpoints=1,
                loc=legend_pos)
+    else:
+        lgd = plt.legend(handles, labels, numpoints=1,
+               loc='center right', bbox_to_anchor=(1.3, 0.5))
+        
     for handle in handles:
         handle.set_visible(False)
+
+    return lgd
 
 
 if __name__ == '__main__':

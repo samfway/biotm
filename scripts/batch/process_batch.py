@@ -8,6 +8,7 @@ import argparse
 from numpy import save as np_save
 from numpy import load as np_load
 from numpy import array, zeros
+from numpy.random import permutation
 from os import path, system
 
 from sklearn.ensemble import RandomForestClassifier
@@ -21,6 +22,7 @@ import brewer2mpl
 def interface():
     args = argparse.ArgumentParser()
     args.add_argument('-i', '--input-dir', help='Input results directory', required=True)
+    args.add_argument('-o', '--output-file', help='Output (image) file', default='out.pdf')
     args.add_argument('-d', '--dims', help='List of dimensions', default='5, 10, 25, 50, 100')
     args.add_argument('-k', '--num-folds', help='Number of CV folds', type=int, required=True)
     args.add_argument('-n', '--cv-iters', help='CV iterations', type=int, default=1)
@@ -48,6 +50,7 @@ if __name__=="__main__":
     cv_scores = zeros(num_folds)
 
     for technique in techniques:
+        print technique
         tech_data = []
         for d in dim_steps:
             for c in xrange(num_folds):            
@@ -67,8 +70,6 @@ if __name__=="__main__":
                 mdl.fit(X_train, y_train)
                 y_pred = mdl.predict(X_test)
                 
-                print prefix
-
                 cv_scores[c] = qual(y_test, y_pred)
             tech_data.append(cv_scores.copy())
         plot_data.append(tech_data)
@@ -76,6 +77,7 @@ if __name__=="__main__":
     np_save(path.join(cv_dir, 'plot_data.npy'), array(plot_data))
     data_matrix = np_load(path.join(cv_dir, 'data_matrix.npy'))
 
+    # NO DIMENSIONALITY REDUCTION
     for technique in techniques[:1]:
         tech_data = []
         for d in dim_steps:
@@ -100,12 +102,42 @@ if __name__=="__main__":
             tech_data.append(cv_scores.copy())
         plot_data.append(tech_data)
 
+    # NO DIM REDUX + *PERMUTED LABELS*
+    for technique in techniques[:1]:
+        tech_data = []
+        for d in dim_steps:
+            for c in xrange(num_folds):            
+                prefix = 'CV_%d_%s_%d_' % (c, technique, d)
+                prefix = path.join(cv_dir, prefix)
+
+                ind_prefix = path.join(cv_dir, 'CV_%d_' % (c))
+                test = np_load(ind_prefix + 'testing.npy')
+                train = np_load(ind_prefix + 'training.npy')
+
+                X_test = data_matrix[test]
+                X_train = data_matrix[train]
+                
+                y_test = metadata_values[test]
+                y_train = metadata_values[train]
+
+                # Shuffle the labels.
+                y_test = permutation(y_test)
+                y_train = permutation(y_train)
+
+                mdl.fit(X_train, y_train)
+                y_pred = mdl.predict(X_test)
+                
+                cv_scores[c] = qual(y_test, y_pred)
+            tech_data.append(cv_scores.copy())
+        plot_data.append(tech_data)
+
+
 fig, ax = plt.subplots(figsize=(10, 8), dpi=80)
 plot_data = array(plot_data)        
-names = techniques + ["None"]
+names = techniques + ["None", "Guessing"]
 points = [str(step) for step in dim_steps]
-make_grouped_box(ax, plot_data, names, xticklabels=points)
+lgd = make_grouped_box(ax, plot_data, names, xticklabels=points, legend_pos='outside')
 ax.set_ylabel('Accuracy')
 ax.set_xlabel('Number of Dimensions')
 ax.set_title('Predicting "%s"' % (metadata_category))
-plt.savefig(metadata_category+'_c.pdf')
+plt.savefig(args.output_file, bbox_extra_artists=(lgd,), bbox_inches='tight')

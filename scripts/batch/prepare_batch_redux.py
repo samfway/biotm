@@ -76,5 +76,7 @@ if __name__=="__main__":
                              training_file, testing_file, num_dims, k, args.methods)
             i += 1
 
+    last_file = open(script_file, 'a')
+    last_file.write('echo "The last script finished" | mail -s "Done!" samfway@gmail.com')
     make_launch_script(scripts_dir, i-1)
 
