@@ -19,6 +19,7 @@ def interface():
     args.add_argument('-n', '--cv-iters', help='CV iterations', type=int, default=1)
     args.add_argument('-m', '--methods', help='Dimensionality reduction methods (comma-sep)',
                       default='svd,nmf,plsa,lda,slda')
+    args.add_argument('-S', '--max-scripts', help='Limit number of scripts', type=int, default=1000)
     args = args.parse_args()
     return args
 
@@ -31,8 +32,18 @@ def make_bash_script(script_name, data_matrix_file, labels_file, output_dir,
                   (data_matrix_file, labels_file, output_dir, training_file, testing_file,
                    num_dims, cv_id, methods))
     system('chmod u+x %s' % script_name)  # make it executable.
+    output.close()
     return
 
+
+def add_to_bash_script(script_name, data_matrix_file, labels_file, output_dir,
+                     training_file, testing_file, num_dims, cv_id, methods):
+    output = open(script_name, 'a')
+    output.write('batch_dim_redux.py -i %s -l %s -o %s -r %s -t %s -k %d -n %d -m "%s"\n' %
+                  (data_matrix_file, labels_file, output_dir, training_file, testing_file,
+                   num_dims, cv_id, methods))
+    output.close()
+    return
 
 def make_launch_script(scripts_dir, n):
     output = open(path.join(scripts_dir, 'launch.sh'), 'w')
@@ -42,7 +53,7 @@ def make_launch_script(scripts_dir, n):
     output.write('#PBS -t 0-%d\n' % n)
     output.write('#PBS -q long8gb\n')
     output.write('#PBS -l pmem=8gb\n')
-    output.write('#PBS -l nodes=1:ppn=4\n')
+    output.write('#PBS -l nodes=1:ppn=1\n')
     output.write('%s/${PBS_ARRAYID}.sh\n' % scripts_dir)
     output.close()
     system('chmod u+x %s' % path.join(scripts_dir, 'launch.sh')) 
@@ -71,12 +82,17 @@ if __name__=="__main__":
         np_save(testing_file, testing)
         
         for num_dims in dim_steps:
-            script_file = path.join(scripts_dir, '%d.sh' % i)
-            make_bash_script(script_file, data_matrix_file, labels_file, output_dir,
-                             training_file, testing_file, num_dims, k, args.methods)
+            if i >= args.max_scripts:
+                ind = i % args.max_scripts
+                script_file = path.join(scripts_dir, '%d.sh' % ind)
+                add_to_bash_script(script_file, data_matrix_file, labels_file, output_dir,
+                                 training_file, testing_file, num_dims, k, args.methods)
+            else:
+                script_file = path.join(scripts_dir, '%d.sh' % i)
+                make_bash_script(script_file, data_matrix_file, labels_file, output_dir,
+                                 training_file, testing_file, num_dims, k, args.methods)
             i += 1
 
-    last_file = open(script_file, 'a')
-    last_file.write('echo "The last script finished" | mail -s "Done!" samfway@gmail.com')
-    make_launch_script(scripts_dir, i-1)
+    num_scripts = min(i-1, args.max_scripts-1)
+    make_launch_script(scripts_dir, num_scripts) 
 
