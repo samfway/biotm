@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 import argparse
+import numpy as np
 from numpy import save as np_save
 from numpy import load as np_load
 from numpy import array, zeros
@@ -12,7 +13,8 @@ from numpy.random import permutation
 from os import path, system
 
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from scipy.stats import ttest_1samp
 
 from biotm.scripts.batch.util import get_methods
 from biotm.plotting.grouped_box import make_grouped_box
@@ -45,9 +47,10 @@ if __name__=="__main__":
     metadata_category = args.label
 
     mdl = RandomForestClassifier()
-    qual = accuracy_score
+    qual = roc_auc_score
     plot_data = []
     cv_scores = zeros(num_folds)
+    output = open(args.output_file + '.csv', 'w')
 
     for technique in techniques:
         print technique
@@ -68,13 +71,23 @@ if __name__=="__main__":
                 y_train = metadata_values[train]
 
                 mdl.fit(X_train, y_train)
-                y_pred = mdl.predict(X_test)
+                probs = mdl.predict_proba(X_test)
+                y_pred = probs[:,1]
+                #y_pred = mdl.predict(X_test)
                 
-                cv_scores[c] = qual(y_test, y_pred)
+                try:
+                    cv_scores[c] = qual(y_test, y_pred)
+                except:
+                    print y_test
+                    print y_pred
+                    exit()
+
             tech_data.append(cv_scores.copy())
+            t, p = ttest_1samp(cv_scores, 0.5)
+            output.write('%s,%d,%f,%f,%f,%f,%s\n' % 
+                (technique, d, np.mean(cv_scores), np.std(cv_scores), t, p, args.label))
         plot_data.append(tech_data)
 
-    np_save(path.join(cv_dir, 'plot_data.npy'), array(plot_data))
     data_matrix = np_load(path.join(cv_dir, 'data_matrix.npy'))
 
     # NO DIMENSIONALITY REDUCTION
@@ -96,10 +109,15 @@ if __name__=="__main__":
                 y_train = metadata_values[train]
 
                 mdl.fit(X_train, y_train)
-                y_pred = mdl.predict(X_test)
+                #y_pred = mdl.predict(X_test)
+                probs = mdl.predict_proba(X_test)
+                y_pred = probs[:,1]
                 
                 cv_scores[c] = qual(y_test, y_pred)
             tech_data.append(cv_scores.copy())
+            t, p = ttest_1samp(cv_scores, 0.5)
+            output.write('%s,%d,%f,%f,%f,%f,%s\n' % 
+                ('None', d, np.mean(cv_scores), np.std(cv_scores), t, p, args.label))
         plot_data.append(tech_data)
 
     # NO DIM REDUX + *PERMUTED LABELS*
@@ -125,19 +143,34 @@ if __name__=="__main__":
                 y_train = permutation(y_train)
 
                 mdl.fit(X_train, y_train)
-                y_pred = mdl.predict(X_test)
+                #y_pred = mdl.predict(X_test)
+                probs = mdl.predict_proba(X_test)
+                y_pred = probs[:,1]
                 
                 cv_scores[c] = qual(y_test, y_pred)
             tech_data.append(cv_scores.copy())
+            output.write('%s,%d,%f,%f,%f,%f,%s\n' % 
+                ('Guess', d, np.mean(cv_scores), np.std(cv_scores), t, p, args.label))
         plot_data.append(tech_data)
 
+    output.close()
+
+names = techniques + ["None", "Guessing"]
+points = [str(step) for step in dim_steps]
+
+# Save off plotting data
+np_save(path.join(cv_dir, 'plot_data.npy'), array(plot_data))
+
+# Save off additional data
+output = open(path.join(cv_dir, 'plot_data.txt'), 'w')
+output.write('#TECHNIQUES,' +  ','.join(names) + '\n')
+output.write('#STEPS,' +  ','.join(points) + '\n')
+output.close()
 
 fig, ax = plt.subplots(figsize=(10, 8), dpi=80)
 plot_data = array(plot_data)        
-names = techniques + ["None", "Guessing"]
-points = [str(step) for step in dim_steps]
 lgd = make_grouped_box(ax, plot_data, names, xticklabels=points, legend_pos='outside')
-ax.set_ylabel('Accuracy')
+ax.set_ylabel('AUC')
 ax.set_xlabel('Number of Dimensions')
 ax.set_title('Predicting "%s"' % (metadata_category))
 plt.savefig(args.output_file, bbox_extra_artists=(lgd,), bbox_inches='tight')

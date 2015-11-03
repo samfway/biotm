@@ -3,6 +3,7 @@
 from sklearn.decomposition import TruncatedSVD, KernelPCA, FastICA, MiniBatchDictionaryLearning, NMF
 from biotm.topic_models.plsa.plsa import plsa
 from biotm.topic_models.r_lda.slda import slda, lda
+from biotm.topic_models.lda.lda import lda
 
 
 def get_methods(methods_string):

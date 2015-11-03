@@ -44,8 +44,8 @@ class lda:
         #                      update_every = self.update_every)
         num_words = X.shape[1]
         id_dict = dict(zip(range(num_words), [str(i) for i in xrange(num_words)]))
-        self.model = LdaModel(corpus, num_topics=self.num_topics,
-                              id2word=id_dict, passes=1, update_every=0)
+        self.model = LdaModel(corpus, num_topics=self.num_topics, alpha='asymmetric', eval_every=5,
+                              id2word=id_dict, passes=self.n_passes, update_every=1, iterations=50)
 
     
     def transform(self, X):
@@ -64,8 +64,8 @@ class lda:
              array (documents will be columns)"
              hence taking the transpose here: 
         """ 
-        return corpus2csc(temp_corpus, num_terms=self.num_topics,
-                          num_docs=X.shape[0]).transpose()
+        return corpus2dense(temp_corpus, num_terms=self.num_topics,
+                            num_docs=X.shape[0]).transpose()
 
 
     def get_params(self, deep=True):

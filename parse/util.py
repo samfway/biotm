@@ -44,12 +44,20 @@ def custom_cast(s):
     raise BaseException('Could not cast as number/string!')
 
 
+def is_iterable(x):
+    try:
+        y = iter(x)
+    except TypeError, te:
+        return False
+    return True
+
+
 def convert_labels_to_int(labels):
     """ Convert a list of labels to indices """ 
     if not len(labels):
         raise ValueError("Nothing to convert!")
 
-    if isinstance(labels[0], basestring):
+    if isinstance(labels[0], basestring) or isinstance(labels[0], int):
         label_legend = list(set(labels))
         converted_labels = [ label_legend.index(l) for l in labels ]
     elif is_iterable(labels[0]):  # Multiple labels, handle each one individually
@@ -67,8 +75,7 @@ def convert_labels_to_int(labels):
             converted_label = [ leg.index(l) for leg, l in 
                                 zip(label_legend, label) ]
             converted_labels.append(converted_label)
-    else:  # Not a string, not a list, go for ints
-        converted_labels = [int(x) for x in labels] 
-        label_legend = list(set(labels))
+    else:  # Not a string/int, not a list... hmmm
+        raise ValueError('Unexpected label type!')
 
     return label_legend, array(converted_labels)
