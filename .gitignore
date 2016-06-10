@@ -4,6 +4,7 @@ __pycache__/
 
 # C extensions
 *.so
+*.sh
 
 # Distribution / packaging
 .Python
@@ -52,3 +53,5 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# Numpy files
+*.npy

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 from sklearn.decomposition import TruncatedSVD, KernelPCA, FastICA, MiniBatchDictionaryLearning, NMF
+#import sklearn.decomposition.LatentDirichletAllocation as lda
 from biotm.topic_models.plsa.plsa import plsa
-from biotm.topic_models.r_lda.slda import slda, lda
+from biotm.topic_models.r_lda.slda import slda #, lda
 from biotm.topic_models.lda.lda import lda
 
 

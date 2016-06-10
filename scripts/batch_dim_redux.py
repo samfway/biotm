@@ -5,15 +5,7 @@ from numpy import load as np_load
 from numpy import save as np_save
 from os import path
 
-from sklearn.decomposition import TruncatedSVD, KernelPCA, FastICA, MiniBatchDictionaryLearning, NMF
-from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-
-from biotm.topic_models.plsa.plsa import plsa
-from biotm.topic_models.r_lda.slda import slda
-from biotm.topic_models.lda import lda
-from biotm.scripts.batch.util import get_methods
+from biotm.scripts.util import get_methods
 
 
 def interface():
